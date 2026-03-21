@@ -2,10 +2,14 @@ import { useState, useEffect } from 'react';
 import { Container, Col, Form, Button, Card, Row, Badge } from 'react-bootstrap';
 
 import Auth from '../utils/auth';
-import { saveTitle, searchOmdb } from '../utils/API';
+import { searchOmdb } from '../utils/API';
 import { saveTitleIds, getSavedTitleIds } from '../utils/localStorage';
 
+import { useMutation } from '@apollo/client';
+import { SAVE_TITLE } from '../utils/mutations.js'
+
 const SearchTitles = () => {
+  const [saveTitle] = useMutation(SAVE_TITLE);
   // returned OMDb search data
   const [searchedTitles, setSearchedTitles] = useState([]);
   // search input
@@ -58,13 +62,10 @@ const SearchTitles = () => {
   const handleSaveTitle = async (imdbID) => {
     const titleToSave = searchedTitles.find((t) => t.imdbID === imdbID);
 
-    const token = Auth.loggedIn() ? Auth.getToken() : null;
-    if (!token) return false;
-
     try {
-      const response = await saveTitle(titleToSave, token);
-
-      if (!response.ok) throw new Error('Save failed');
+      await saveTitle({
+        variables: { input: titleToSave }
+      });
 
       setSavedTitleIds([...savedTitleIds, titleToSave.imdbID]);
     } catch (err) {

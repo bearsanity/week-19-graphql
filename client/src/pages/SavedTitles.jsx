@@ -1,54 +1,35 @@
-import { useState, useEffect } from 'react';
 import { Container, Card, Button, Row, Col, Badge } from 'react-bootstrap';
 
-import { getMe, deleteTitle } from '../utils/API';
 import Auth from '../utils/auth';
 import { removeTitleId } from '../utils/localStorage';
 
+import { useQuery, useMutation } from '@apollo/client';
+import { REMOVE_TITLE } from '../utils/mutations.js'
+import { GET_ME } from '../utils/queries.js'
+
+
+
 const SavedTitles = () => {
-  const [userData, setUserData] = useState({});
-
+  const { loading, data } = useQuery(GET_ME);
+  const userData = data?.me || {};
   const userDataLength = Object.keys(userData).length;
+  const [removeTitle] = useMutation(REMOVE_TITLE);
+  
+const handleDeleteTitle = async (imdbID) => {
+  try {
+    await removeTitle({
+      variables: { imdbId: imdbID }
+    });
 
-  useEffect(() => {
-    const getUserData = async () => {
-      try {
-        const token = Auth.loggedIn() ? Auth.getToken() : null;
-        if (!token) return false;
-
-        const response = await getMe(token);
-        if (!response.ok) throw new Error('Request failed');
-
-        const user = await response.json();
-        setUserData(user);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    getUserData();
-  }, [userDataLength]);
-
-  const handleDeleteTitle = async (imdbID) => {
-    const token = Auth.loggedIn() ? Auth.getToken() : null;
-    if (!token) return false;
-
-    try {
-      const response = await deleteTitle(imdbID, token);
-      if (!response.ok) throw new Error('Delete failed');
-
-      const updatedUser = await response.json();
-      setUserData(updatedUser);
-
-      removeTitleId(imdbID);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  if (!userDataLength) {
-    return <h2>LOADING...</h2>;
+    removeTitleId(imdbID);
+  } catch (err) {
+    console.error(err);
   }
+};
+
+    if (loading) {
+      return <h2>LOADING...</h2>;
+    }
 
   const saved = userData.savedTitles || [];
 
